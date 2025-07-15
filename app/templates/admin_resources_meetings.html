@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="admin-banner">
+  <h1>Manage Resources & Meetings</h1>
+</div>
+<div class="quick-links">
+  <a href="/admin/">Admin Dashboard</a> |
+  <a href="/admin/resources_meetings">Resources & Meetings</a> |
+  <a href="/">Home</a>
+</div>
+
+<div class="features">
+  <div class="feature-box">
+    <h3>Add Resource</h3>
+    <form method="POST">
+      <input type="hidden" name="form_type" value="resource">
+      <input name="title" placeholder="Title" required><br>
+      <input name="description" placeholder="Description" required><br>
+      <input name="link" placeholder="Link (URL)" required><br>
+      <input name="category" placeholder="Category (optional)"><br>
+      <button type="submit">Add Resource</button>
+    </form>
+  </div>
+  <div class="feature-box">
+    <h3>Add Meeting</h3>
+    <form method="POST">
+      <input type="hidden" name="form_type" value="meeting">
+      <input name="title" placeholder="Title" required><br>
+      <input name="description" placeholder="Description" required><br>
+      <input name="datetime" type="datetime-local" required><br>
+      <input name="link" placeholder="Meeting Link (URL)" required><br>
+      <button type="submit">Add Meeting</button>
+    </form>
+  </div>
+</div>
+
+<div class="resources-list">
+  <h3>Resources</h3>
+  <ul>
+    {% for resource in resources %}
+      <li>
+        <strong>{{ resource.title }}</strong> ({{ resource.category }})<br>
+        {{ resource.description }}<br>
+        <a href="{{ resource.link }}" target="_blank">{{ resource.link }}</a>
+        <a href="/admin/delete_resource/{{ resource._id }}" class="deleteBtn">Delete</a>
+      </li>
+    {% else %}
+      <li>No resources added yet.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="meetings-list">
+  <h3>Meetings</h3>
+  <ul>
+    {% for meeting in meetings %}
+      <li>
+        <strong>{{ meeting.title }}</strong> ({{ meeting.datetime }})<br>
+        {{ meeting.description }}<br>
+        <a href="{{ meeting.link }}" target="_blank">{{ meeting.link }}</a>
+        <a href="/admin/delete_meeting/{{ meeting._id }}" class="deleteBtn">Delete</a>
+      </li>
+    {% else %}
+      <li>No meetings scheduled yet.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %} 

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="intern-banner">
+  <h1>Welcome, {{ intern.name }}!</h1>
+  <p>Here is your personalized dashboard.</p>
+</div>
+
+<div class="quick-links">
+  <a href="/">Home</a> |
+  <a href="/intern/logout">Logout</a>
+</div>
+
+<div class="intern-features">
+  <div class="feature-box">
+    <h3>Your Team</h3>
+    <p><strong>{{ intern.team }}</strong></p>
+  </div>
+  <div class="feature-box">
+    <h3>Current Task</h3>
+    <p>{{ intern.task }}</p>
+  </div>
+</div>
+
+<div class="recent-tasks-box">
+  <h3>Recent Task</h3>
+  <ul>
+    {% for task in recent_tasks %}
+      <li>{{ task }}</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="team-members-box">
+  <h3>Your Team Members</h3>
+  {% if team_members %}
+    <ul>
+      {% for member in team_members %}
+        <li>{{ member.name }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No other team members found.</p>
+  {% endif %}
+</div>
+
+<div class="resources-list">
+  <h3>Resources</h3>
+  <ul>
+    {% for resource in resources %}
+      <li>
+        <strong>{{ resource.title }}</strong> ({{ resource.category }})<br>
+        {{ resource.description }}<br>
+        <a href="{{ resource.link }}" target="_blank">{{ resource.link }}</a>
+      </li>
+    {% else %}
+      <li>No resources available yet.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="meetings-list">
+  <h3>Upcoming Meetings</h3>
+  <ul>
+    {% for meeting in meetings %}
+      <li>
+        <strong>{{ meeting.title }}</strong> ({{ meeting.datetime }})<br>
+        {{ meeting.description }}<br>
+        <a href="{{ meeting.link }}" target="_blank">{{ meeting.link }}</a>
+      </li>
+    {% else %}
+      <li>No meetings scheduled yet.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="admin-banner">
+  <h1>Admin Dashboard</h1>
+  <p>Manage all interns, teams, and tasks from one place.</p>
+</div>
+
+<div class="quick-links">
+  <a href="/">Home</a> |
+  <a href="/admin/">Admin Dashboard</a> |
+  <a href="/admin/resources_meetings">Resources & Meetings</a> |
+  <a href="/admin/change_credentials">Change Credentials</a> |
+  <a href="/admin/logout">Logout</a>
+</div>
+
+<!-- Success/Error Message Placeholder -->
+<div id="message" style="display:none;"></div>
+
+<div class="features">
+  <div class="feature-box">
+    <h3>Team Overview</h3>
+    <ul>
+      {% set team_overview = {} %}
+      {% for intern in interns %}
+        {% set _ = team_overview.update({intern.team: (team_overview.get(intern.team, 0) + 1)}) %}
+      {% endfor %}
+      {% for team, count in team_overview.items() %}
+        <li><strong>{{ team }}</strong>: {{ count }} intern{{ 's' if count > 1 else '' }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="feature-box">
+    <h3>Recent Additions</h3>
+    <ul>
+      {%- set count = 0 -%}
+      {%- for intern in interns|reverse if count < 5 -%}
+        <li><strong>{{ intern.name }}</strong> ({{ intern.team }})</li>
+        {%- set count = count + 1 -%}
+      {%- endfor -%}
+    </ul>
+  </div>
+</div>
+
+<div class="add-section">
+  <form method="POST" action="{{ url_for('admin.add_intern') }}">
+    <input name="name" placeholder="Name" required>
+    <input name="team" placeholder="Team" required>
+    <input name="task" placeholder="Task" required>
+    <button type="submit">Add Intern</button>
+  </form>
+</div>
+
+<div class="search-section">
+  <input type="text" id="searchInput" placeholder="Search interns by name or team...">
+</div>
+
+<div class="intern-list" id="internList">
+  {% for intern in interns %}
+    <div class="intern-card" data-name="{{ intern.name }}" data-team="{{ intern.team }}" data-task="{{ intern.task }}">
+      <h4>{{ intern.name }}</h4>
+      <p><strong>Team:</strong> {{ intern.team }}</p>
+      <p><strong>Task:</strong> {{ intern.task }}</p>
+      <button class="editBtn" 
+        data-name="{{ intern.name }}" 
+        data-team="{{ intern.team }}" 
+        data-task="{{ intern.task }}"
+        data-id="{{ intern._id }}"
+        {% if intern.username %}data-username="{{ intern.username }}"{% endif %}
+      >Edit</button>
+      <a href="{{ url_for('admin.delete_intern', id=intern._id) }}" class="deleteBtn">Delete</a>
+    </div>
+  {% endfor %}
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span class="close" id="closeModal">&times;</span>
+    <form id="editForm" method="POST">
+      <label>Name: <input type="text" name="name" id="editName" required></label><br>
+      <label>Team: <input type="text" name="team" id="editTeam" required></label><br>
+      <label>Task: <input type="text" name="task" id="editTask" required></label><br>
+      <label>Username: <input type="text" name="username" id="editUsername"></label><br>
+      <label>Password: <input type="password" name="password" id="editPassword"></label><br>
+      <button type="submit">Save</button>
+    </form>
+  </div>
+</div>
+
+<script>
+// Search/filter logic
+const searchInput = document.getElementById('searchInput');
+const internList = document.getElementById('internList');
+searchInput.addEventListener('input', function() {
+  const filter = searchInput.value.toLowerCase();
+  Array.from(internList.getElementsByClassName('intern-card')).forEach(card => {
+    const name = card.getAttribute('data-name').toLowerCase();
+    const team = card.getAttribute('data-team').toLowerCase();
+    card.style.display = (name.includes(filter) || team.includes(filter)) ? '' : 'none';
+  });
+});
+// Modal logic for edit
+const modal = document.getElementById('editModal');
+const closeModal = document.getElementById('closeModal');
+const editForm = document.getElementById('editForm');
+let currentName = '';
+Array.from(document.getElementsByClassName('editBtn')).forEach(btn => {
+    btn.onclick = function() {
+        document.getElementById('editName').value = btn.getAttribute('data-name');
+        document.getElementById('editTeam').value = btn.getAttribute('data-team');
+        document.getElementById('editTask').value = btn.getAttribute('data-task');
+        document.getElementById('editUsername').value = btn.getAttribute('data-username') || '';
+        document.getElementById('editPassword').value = '';
+        currentName = btn.getAttribute('data-name');
+        editForm.action = '/intern/edit/' + encodeURIComponent(currentName);
+        modal.style.display = 'block';
+    }
+});
+closeModal.onclick = function() { modal.style.display = 'none'; }
+window.onclick = function(event) { if (event.target == modal) { modal.style.display = 'none'; } }
+</script>
+{% endblock %}

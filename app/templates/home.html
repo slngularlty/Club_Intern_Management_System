@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="welcome-banner">
+  <h1>Welcome to the Intern Portal</h1>
+  <p>Track, manage, and celebrate our amazing interns!</p>
+</div>
+
+<div class="quick-links">
+  <a href="/admin/">Admin Dashboard</a> |
+  <a href="/intern/login">Intern Login</a> |
+  <a href="/">Home</a>
+</div>
+
+<div class="features">
+  <div class="feature-box">
+    <h3>Team Overview</h3>
+    <ul>
+      {% for team, count in team_overview.items() %}
+        <li><strong>{{ team }}</strong>: {{ count }} intern{{ 's' if count > 1 else '' }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="feature-box">
+    <h3>Recent Tasks</h3>
+    <ul>
+      {% for item in recent_tasks %}
+        <li><strong>{{ item.name }}</strong>: {{ item.task }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<div class="search-section">
+  <input type="text" id="searchInput" placeholder="Search interns by name or team...">
+</div>
+
+<div class="intern-list" id="internList">
+  {% for intern in interns %}
+    <div class="intern-card" data-name="{{ intern.name }}" data-team="{{ intern.team }}" data-task="{{ intern.task }}">
+      <h4>{{ intern.name }}</h4>
+      <p><strong>Team:</strong> {{ intern.team }}</p>
+      <p><strong>Task:</strong> {{ intern.task }}</p>
+      <button class="detailsBtn">Details</button>
+    </div>
+  {% endfor %}
+</div>
+
+<!-- Intern Details Modal -->
+<div id="detailsModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span class="close" id="closeDetails">&times;</span>
+    <h3 id="modalName"></h3>
+    <p><strong>Team:</strong> <span id="modalTeam"></span></p>
+    <p><strong>Task:</strong> <span id="modalTask"></span></p>
+  </div>
+</div>
+
+<script>
+// Search/filter logic
+const searchInput = document.getElementById('searchInput');
+const internList = document.getElementById('internList');
+searchInput.addEventListener('input', function() {
+  const filter = searchInput.value.toLowerCase();
+  Array.from(internList.getElementsByClassName('intern-card')).forEach(card => {
+    const name = card.getAttribute('data-name').toLowerCase();
+    const team = card.getAttribute('data-team').toLowerCase();
+    card.style.display = (name.includes(filter) || team.includes(filter)) ? '' : 'none';
+  });
+});
+// Modal logic for details
+const detailsModal = document.getElementById('detailsModal');
+const closeDetails = document.getElementById('closeDetails');
+Array.from(document.getElementsByClassName('detailsBtn')).forEach(btn => {
+  btn.onclick = function() {
+    const card = btn.parentElement;
+    document.getElementById('modalName').textContent = card.getAttribute('data-name');
+    document.getElementById('modalTeam').textContent = card.getAttribute('data-team');
+    document.getElementById('modalTask').textContent = card.getAttribute('data-task');
+    detailsModal.style.display = 'block';
+  }
+});
+closeDetails.onclick = function() { detailsModal.style.display = 'none'; }
+window.onclick = function(event) { if (event.target == detailsModal) { detailsModal.style.display = 'none'; } }
+</script>
+{% endblock %}
