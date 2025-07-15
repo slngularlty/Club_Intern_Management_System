@@ -2,18 +2,10 @@
 
 ## Setup
 
-1. Create and activate a virtual environment:
-
-```bash
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-```
-Install dependencies:
+1. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
-Create a config.py file with your MongoDB URI and secret key.
-
 Run the app:
 
 ```bash
