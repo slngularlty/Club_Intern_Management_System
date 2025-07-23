@@ -1,2 +1,8 @@
-MONGO_URI = "mongodb+srv://pop976104:Ss6i5giMbqCpZVeV@cluster0.zigvftc.mongodb.net/intern_dashboard"
-SECRET_KEY = "ef304d16dca454e997ae7ed948033496"
+import os
+
+MONGO_URI   = os.environ.get("MONGO_URI")
+SECRET_KEY  = os.environ.get("SECRET_KEY")
+
+# (Optional) Fail fast if they’re missing:
+if not MONGO_URI or not SECRET_KEY:
+    raise RuntimeError("MONGO_URI and SECRET_KEY must be set in the environment")
