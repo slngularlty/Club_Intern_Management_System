@@ -1,6 +1,6 @@
 from flask import Flask
 from .models.db import init_db
-from .routes import admin, intern, home  # Import home blueprint
+from .routes import admin, intern, home
 
 def create_app():
     app = Flask(__name__)
@@ -8,8 +8,8 @@ def create_app():
 
     init_db(app)
 
-    app.register_blueprint(home.bp)  # Home page at '/'
-    app.register_blueprint(admin.bp) # Admin routes at '/admin'
-    app.register_blueprint(intern.bp) # Intern routes at '/intern'
+    app.register_blueprint(home.bp)
+    app.register_blueprint(admin.bp)
+    app.register_blueprint(intern.bp)
 
     return app

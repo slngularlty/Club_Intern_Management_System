@@ -42,12 +42,15 @@
 </div>
 
 <div class="add-section">
-  <form method="POST" action="{{ url_for('admin.add_intern') }}">
-    <input name="name" placeholder="Name" required>
-    <input name="team" placeholder="Team" required>
-    <input name="task" placeholder="Task" required>
-    <button type="submit">Add Intern</button>
-  </form>
+    <form method="POST" action="{{ url_for('admin.add_intern') }}">
+        <input name="name" placeholder="Name" required>
+        <input name="team" placeholder="Team" required>
+        <input name="task" placeholder="Task" required>
+        
+        <input name="username" placeholder="Username (Optional)">
+        <input type="password" name="password" placeholder="Password (Optional)">
+        <button type="submit">Add Intern</button>
+    </form>
 </div>
 
 <div class="search-section">
