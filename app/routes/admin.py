@@ -1,9 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from app.models.db import mongo, get_resources, add_resource, delete_resource, get_meetings, add_meeting, delete_meeting
+from app.models.db import mongo, hash_password, verify_password, get_resources, add_resource, delete_resource, get_meetings, add_meeting, delete_meeting
 from bson.objectid import ObjectId
 from functools import wraps
-import os
-import json
+import os 
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -15,23 +14,19 @@ def admin_login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-ADMIN_CREDENTIALS_FILE = 'admin_credentials.json'
-def get_admin_credentials():
-    if os.path.exists(ADMIN_CREDENTIALS_FILE):
-        with open(ADMIN_CREDENTIALS_FILE, 'r') as f:
-            return json.load(f)
-    return {'username': 'admin', 'password': 'admin123'}
-def set_admin_credentials(username, password):
-    with open(ADMIN_CREDENTIALS_FILE, 'w') as f:
-        json.dump({'username': username, 'password': password}, f)
-
 @bp.route('/login', methods=['GET', 'POST'])
 def admin_login():
-    creds = get_admin_credentials()
+    expected_username = os.environ.get('ADMIN_USERNAME')
+    expected_password = os.environ.get('ADMIN_PASSWORD')
+
+    if not expected_username or not expected_password:
+        flash('Admin credentials not configured in environment.', 'error')
+        return render_template('admin_login.html')
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if username == creds['username'] and password == creds['password']:
+        if username == expected_username and password == expected_password:
             session['admin_logged_in'] = True
             return redirect(url_for('admin.dashboard'))
         else:
@@ -42,18 +37,6 @@ def admin_login():
 def admin_logout():
     session.pop('admin_logged_in', None)
     return redirect(url_for('admin.admin_login'))
-
-@bp.route('/change_credentials', methods=['GET', 'POST'])
-@admin_login_required
-def change_credentials():
-    creds = get_admin_credentials()
-    if request.method == 'POST':
-        new_username = request.form['username']
-        new_password = request.form['password']
-        set_admin_credentials(new_username, new_password)
-        flash('Admin credentials updated successfully.', 'success')
-        return redirect(url_for('admin.dashboard'))
-    return render_template('change_admin_credentials.html', username=creds['username'])
 
 @bp.route('/')
 @admin_login_required
@@ -67,7 +50,22 @@ def add_intern():
     name = request.form['name']
     team = request.form['team']
     task = request.form['task']
-    mongo.db.interns.insert_one({'name': name, 'team': team, 'task': task})
+
+    username = request.form.get('username')
+    password = request.form.get('password')
+
+    intern_data = {
+        'name': name,
+        'team': team,
+        'task': task
+    }
+
+    if username:
+        intern_data['username'] = username
+    if password:
+        intern_data['password'] = hash_password(password)
+
+    mongo.db.interns.insert_one(intern_data)
     return redirect(url_for('admin.dashboard'))
 
 @bp.route('/delete/<id>')
@@ -79,7 +77,6 @@ def delete_intern(id):
 @bp.route('/resources_meetings', methods=['GET', 'POST'])
 @admin_login_required
 def resources_meetings():
-    # Handle add resource
     if request.method == 'POST' and request.form.get('form_type') == 'resource':
         add_resource({
             'title': request.form['title'],
@@ -87,7 +84,6 @@ def resources_meetings():
             'link': request.form['link'],
             'category': request.form.get('category', '')
         })
-    # Handle add meeting
     if request.method == 'POST' and request.form.get('form_type') == 'meeting':
         add_meeting({
             'title': request.form['title'],
