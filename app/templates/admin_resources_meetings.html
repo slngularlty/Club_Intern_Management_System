@@ -1,68 +1,206 @@
 {% extends 'base.html' %}
+{% block title %}Manage Resources & Meetings{% endblock %}
 {% block content %}
 <div class="admin-banner">
-  <h1>Manage Resources & Meetings</h1>
+    <h1>Manage Resources & Meetings</h1>
+    <p class="description">Add, update, or delete resources and meetings for interns.</p>
+    {# Admin Logout button is only on the dashboard, not here #}
 </div>
+
 <div class="quick-links">
-  <a href="/admin/">Admin Dashboard</a> |
-  <a href="/admin/resources_meetings">Resources & Meetings</a> |
-  <a href="/">Home</a>
+    <a href="{{ url_for('admin.dashboard') }}" class="button-style">Back to Admin Dashboard</a>
 </div>
 
-<div class="features">
-  <div class="feature-box">
-    <h3>Add Resource</h3>
-    <form method="POST">
-      <input type="hidden" name="form_type" value="resource">
-      <input name="title" placeholder="Title" required><br>
-      <input name="description" placeholder="Description" required><br>
-      <input name="link" placeholder="Link (URL)" required><br>
-      <input name="category" placeholder="Category (optional)"><br>
-      <button type="submit">Add Resource</button>
-    </form>
-  </div>
-  <div class="feature-box">
-    <h3>Add Meeting</h3>
-    <form method="POST">
-      <input type="hidden" name="form_type" value="meeting">
-      <input name="title" placeholder="Title" required><br>
-      <input name="description" placeholder="Description" required><br>
-      <input name="datetime" type="datetime-local" required><br>
-      <input name="link" placeholder="Meeting Link (URL)" required><br>
-      <button type="submit">Add Meeting</button>
-    </form>
-  </div>
+<div class="section-container resource-meeting-add-section">
+    <h2 style="text-align: center; margin-bottom: 25px;">Add New Items</h2>
+    <div class="add-buttons-row">
+        <button type="button" class="button-style add-button" onclick="openAddResourceModal()">Add New Resource</button>
+        <button type="button" class="button-style add-button" onclick="openAddMeetingModal()">Add New Meeting</button>
+    </div>
 </div>
 
-<div class="resources-list">
-  <h3>Resources</h3>
-  <ul>
-    {% for resource in resources %}
-      <li>
-        <strong>{{ resource.title }}</strong> ({{ resource.category }})<br>
-        {{ resource.description }}<br>
-        <a href="{{ resource.link }}" target="_blank">{{ resource.link }}</a>
-        <a href="/admin/delete_resource/{{ resource._id }}" class="deleteBtn">Delete</a>
-      </li>
-    {% else %}
-      <li>No resources added yet.</li>
-    {% endfor %}
-  </ul>
+{# New container for horizontal alignment #}
+<div class="existing-items-container">
+    <div class="section-container existing-resources-section">
+        <h2>Existing Resources</h2>
+        <div class="resources-list">
+            {% for resource in resources %}
+            <div class="resource-card">
+                <h4>{{ resource.title }}</h4>
+                <p>{{ resource.description }}</p>
+                <p>Link: <a href="{{ resource.link }}" target="_blank">{{ resource.link }}</a></p>
+                {% if resource.category %}<p>Category: {{ resource.category }}</p>{% endif %}
+                <div class="resource-actions">
+                    <button class="button-style editBtn" onclick="openEditResourceModal('{{ resource._id }}', '{{ resource.title }}', '{{ resource.description }}', '{{ resource.link }}', '{{ resource.category }}')">Edit</button>
+                    <a href="{{ url_for('admin.delete_resource_route', id=resource._id) }}" class="button-style deleteBtn" onclick="return confirm('Are you sure you want to delete this resource?')">Delete</a>
+                </div>
+            </div>
+            {% else %}
+            <p>No resources added yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="section-container upcoming-meetings-section">
+        <h2>Upcoming Meetings</h2>
+        <div class="meetings-list">
+            {% for meeting in meetings %}
+            <div class="meeting-card">
+                <h4>{{ meeting.title }}</h4>
+                <p>{{ meeting.description }}</p>
+                <p>Time: {{ meeting.datetime }}</p>
+                <p>Link: <a href="{{ meeting.link }}" target="_blank">{{ meeting.link }}</a></p>
+                <div class="meeting-actions">
+                    <button class="button-style editBtn" onclick="openEditMeetingModal('{{ meeting._id }}', '{{ meeting.title }}', '{{ meeting.description }}', '{{ meeting.datetime }}', '{{ meeting.link }}')">Edit</button>
+                    <a href="{{ url_for('admin.delete_meeting_route', id=meeting._id) }}" class="button-style deleteBtn" onclick="return confirm('Are you sure you want to delete this meeting?')">Delete</a>
+                </div>
+            </div>
+            {% else %}
+            <p>No meetings added yet.</p>
+            {% endfor %}
+        </div>
+    </div>
 </div>
 
-<div class="meetings-list">
-  <h3>Meetings</h3>
-  <ul>
-    {% for meeting in meetings %}
-      <li>
-        <strong>{{ meeting.title }}</strong> ({{ meeting.datetime }})<br>
-        {{ meeting.description }}<br>
-        <a href="{{ meeting.link }}" target="_blank">{{ meeting.link }}</a>
-        <a href="/admin/delete_meeting/{{ meeting._id }}" class="deleteBtn">Delete</a>
-      </li>
-    {% else %}
-      <li>No meetings scheduled yet.</li>
-    {% endfor %}
-  </ul>
+
+<div id="addResourceModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeAddResourceModal()">&times;</span>
+        <h3>Add New Resource</h3>
+        <form action="{{ url_for('admin.resources_meetings') }}" method="POST">
+            <input type="hidden" name="form_type" value="resource">
+            <label for="addResourceTitle">Title:</label>
+            <input type="text" id="addResourceTitle" name="title" required><br>
+            <label for="addResourceDescription">Description:</label>
+            <textarea id="addResourceDescription" name="description" required></textarea><br>
+            <label for="addResourceLink">Link (URL):</label>
+            <input type="url" id="addResourceLink" name="link" required><br>
+            <label for="addResourceCategory">Category (Optional):</label>
+            <input type="text" id="addResourceCategory" name="category"><br>
+            <button type="submit" class="button-style add-button">Add Resource</button>
+        </form>
+    </div>
 </div>
-{% endblock %} 
+
+<div id="editResourceModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeEditResourceModal()">&times;</span>
+        <h3>Edit Resource</h3>
+        <form id="editResourceForm" method="POST">
+            <input type="hidden" id="editResourceId" name="resource_id">
+            <label for="editResourceTitle">Title:</label>
+            <input type="text" id="editResourceTitle" name="title" required><br>
+            <label for="editResourceDescription">Description:</label>
+            <textarea id="editResourceDescription" name="description" required></textarea><br>
+            <label for="editResourceLink">Link (URL):</label>
+            <input type="url" id="editResourceLink" name="link" required><br>
+            <label for="editResourceCategory">Category (Optional):</label>
+            <input type="text" id="editResourceCategory" name="category"><br>
+            <button type="submit" class="button-style updateBtn">Update Resource</button>
+        </form>
+    </div>
+</div>
+
+<div id="addMeetingModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeAddMeetingModal()">&times;</span>
+        <h3>Add New Meeting</h3>
+        <form action="{{ url_for('admin.resources_meetings') }}" method="POST">
+            <input type="hidden" name="form_type" value="meeting">
+            <label for="addMeetingTitle">Title:</label>
+            <input type="text" id="addMeetingTitle" name="title" required><br>
+            <label for="addMeetingDescription">Description:</label>
+            <textarea id="addMeetingDescription" name="description" required></textarea><br>
+            <label for="addMeetingDatetime">Date and Time:</label>
+            <input type="datetime-local" id="addMeetingDatetime" name="datetime" required><br>
+            <label for="addMeetingLink">Meeting Link (URL):</label>
+            <input type="url" id="addMeetingLink" name="link"><br>
+            <button type="submit" class="button-style add-button">Add Meeting</button>
+        </form>
+    </div>
+</div>
+
+<div id="editMeetingModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeEditMeetingModal()">&times;</span>
+        <h3>Edit Meeting</h3>
+        <form id="editMeetingForm" method="POST">
+            <input type="hidden" id="editMeetingId" name="meeting_id">
+            <label for="editMeetingTitle">Title:</label>
+            <input type="text" id="editMeetingTitle" name="title" required><br>
+            <label for="editMeetingDescription">Description:</label>
+            <textarea id="editMeetingDescription" name="description" required></textarea><br>
+            <label for="editMeetingDatetime">Date and Time:</label>
+            <input type="datetime-local" id="editMeetingDatetime" name="datetime" required><br>
+            <label for="editMeetingLink">Meeting Link (URL):</label>
+            <input type="url" id="editMeetingLink" name="link"><br>
+            <button type="submit" class="button-style updateBtn">Update Meeting</button>
+        </form>
+    </div>
+</div>
+
+
+<script>
+    // Add Resource Modal Functions
+    function openAddResourceModal() {
+        document.getElementById('addResourceModal').style.display = 'block';
+        document.getElementById('addResourceTitle').value = '';
+        document.getElementById('addResourceDescription').value = '';
+        document.getElementById('addResourceLink').value = '';
+        document.getElementById('addResourceCategory').value = '';
+    }
+    function closeAddResourceModal() {
+        document.getElementById('addResourceModal').style.display = 'none';
+    }
+
+    // Edit Resource Modal Functions
+    function openEditResourceModal(id, title, description, link, category) {
+        document.getElementById('editResourceModal').style.display = 'block';
+        document.getElementById('editResourceForm').action = "{{ url_for('admin.edit_resource', resource_id='PLACEHOLDER') }}".replace('PLACEHOLDER', id);
+        document.getElementById('editResourceId').value = id;
+        document.getElementById('editResourceTitle').value = title;
+        document.getElementById('editResourceDescription').value = description;
+        document.getElementById('editResourceLink').value = link;
+        document.getElementById('editResourceCategory').value = (category === 'None' ? '' : category);
+    }
+    function closeEditResourceModal() {
+        document.getElementById('editResourceModal').style.display = 'none';
+    }
+
+    // Add Meeting Modal Functions
+    function openAddMeetingModal() {
+        document.getElementById('addMeetingModal').style.display = 'block';
+        document.getElementById('addMeetingTitle').value = '';
+        document.getElementById('addMeetingDescription').value = '';
+        document.getElementById('addMeetingDatetime').value = '';
+        document.getElementById('addMeetingLink').value = '';
+    }
+    function closeAddMeetingModal() {
+        document.getElementById('addMeetingModal').style.display = 'none';
+    }
+
+    // Edit Meeting Modal Functions
+    function openEditMeetingModal(id, title, description, datetime, link) {
+        document.getElementById('editMeetingModal').style.display = 'block';
+        document.getElementById('editMeetingForm').action = "{{ url_for('admin.edit_meeting', meeting_id='PLACEHOLDER') }}".replace('PLACEHOLDER', id);
+        document.getElementById('editMeetingId').value = id;
+        document.getElementById('editMeetingTitle').value = title;
+        document.getElementById('editMeetingDescription').value = description;
+        document.getElementById('editMeetingDatetime').value = datetime; // datetime-local input needs exact format
+        document.getElementById('editMeetingLink').value = link;
+    }
+    function closeEditMeetingModal() {
+        document.getElementById('editMeetingModal').style.display = 'none';
+    }
+
+    // Close any modal if click outside
+    window.onclick = function(event) {
+        var modals = document.querySelectorAll('.modal');
+        modals.forEach(function(modal) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        });
+    }
+</script>
+{% endblock %}

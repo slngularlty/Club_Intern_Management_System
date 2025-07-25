@@ -1,10 +1,12 @@
 from flask import Flask
 from .models.db import init_db
 from .routes import admin, intern, home
+import os 
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_pyfile('../config.py')
+    app.config["SECRET_KEY"] = os.environ.get('FLASK_SECRET_KEY')
+    app.config["MONGO_URI"] = os.environ.get('MONGO_URI')
 
     init_db(app)
 

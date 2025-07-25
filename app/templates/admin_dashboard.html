@@ -1,125 +1,156 @@
 {% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
 {% block content %}
 <div class="admin-banner">
-  <h1>Admin Dashboard</h1>
-  <p>Manage all interns, teams, and tasks from one place.</p>
+    <h1>Admin Dashboard</h1>
+    <p class="description">Manage interns, resources, and meetings.</p>
+    <div class="admin-logout-btn">
+        <a href="{{ url_for('admin.admin_logout') }}" class="button-style">Logout</a>
+    </div>
 </div>
 
 <div class="quick-links">
-  <a href="/">Home</a> |
-  <a href="/admin/">Admin Dashboard</a> |
-  <a href="/admin/resources_meetings">Resources & Meetings</a> |
-  <a href="/admin/change_credentials">Change Credentials</a> |
-  <a href="/admin/logout">Logout</a>
+    <a href="{{ url_for('admin.resources_meetings') }}" class="button-style">Manage Resources & Meetings</a> |
+    <a href="{{ url_for('admin.change_admin_credentials') }}" class="button-style">Change Admin Credentials</a>
 </div>
 
-<!-- Success/Error Message Placeholder -->
-<div id="message" style="display:none;"></div>
+<div class="intern-management-section content-section">
+    <h2>Intern Management</h2>
 
-<div class="features">
-  <div class="feature-box">
-    <h3>Team Overview</h3>
-    <ul>
-      {% set team_overview = {} %}
-      {% for intern in interns %}
-        {% set _ = team_overview.update({intern.team: (team_overview.get(intern.team, 0) + 1)}) %}
-      {% endfor %}
-      {% for team, count in team_overview.items() %}
-        <li><strong>{{ team }}</strong>: {{ count }} intern{{ 's' if count > 1 else '' }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  <div class="feature-box">
-    <h3>Recent Additions</h3>
-    <ul>
-      {%- set count = 0 -%}
-      {%- for intern in interns|reverse if count < 5 -%}
-        <li><strong>{{ intern.name }}</strong> ({{ intern.team }})</li>
-        {%- set count = count + 1 -%}
-      {%- endfor -%}
-    </ul>
-  </div>
-</div>
-
-<div class="add-section">
-    <form method="POST" action="{{ url_for('admin.add_intern') }}">
-        <input name="name" placeholder="Name" required>
-        <input name="team" placeholder="Team" required>
-        <input name="task" placeholder="Task" required>
-        
-        <input name="username" placeholder="Username (Optional)">
-        <input type="password" name="password" placeholder="Password (Optional)">
-        <button type="submit">Add Intern</button>
-    </form>
-</div>
-
-<div class="search-section">
-  <input type="text" id="searchInput" placeholder="Search interns by name or team...">
-</div>
-
-<div class="intern-list" id="internList">
-  {% for intern in interns %}
-    <div class="intern-card" data-name="{{ intern.name }}" data-team="{{ intern.team }}" data-task="{{ intern.task }}">
-      <h4>{{ intern.name }}</h4>
-      <p><strong>Team:</strong> {{ intern.team }}</p>
-      <p><strong>Task:</strong> {{ intern.task }}</p>
-      <button class="editBtn" 
-        data-name="{{ intern.name }}" 
-        data-team="{{ intern.team }}" 
-        data-task="{{ intern.task }}"
-        data-id="{{ intern._id }}"
-        {% if intern.username %}data-username="{{ intern.username }}"{% endif %}
-      >Edit</button>
-      <a href="{{ url_for('admin.delete_intern', id=intern._id) }}" class="deleteBtn">Delete</a>
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button type="button" class="button-style add-button" onclick="openAddInternModal()">Add New Intern</button>
     </div>
-  {% endfor %}
+
+    <div class="search-section">
+        <h3>Existing Interns</h3>
+        <input type="text" id="adminInternSearchInput" onkeyup="filterAdminInterns()" placeholder="Search interns...">
+    </div>
+    
+    <div class="intern-list" id="adminInternDirectoryList">
+        {% for intern in interns %}
+        <div class="intern-card admin-card">
+            <h4>{{ intern.name }}</h4>
+            {# Omitted username display here #}
+            <p><strong>Team:</strong> {{ intern.team }}</p>
+            <p><strong>Current Task:</strong> {{ intern.task if intern.task else 'Not assigned yet.' }}</p>
+            <div class="intern-actions">
+                <button class="button-style editBtn" onclick="openEditInternModal('{{ intern._id }}', '{{ intern.name }}', '{{ intern.team }}', '{{ intern.task }}', '{{ intern.username if intern.username else '' }}')">Edit</button> {# Pass username for edit form #}
+                <a href="{{ url_for('admin.delete_intern', id=intern._id) }}" class="button-style deleteBtn" onclick="return confirm('Are you sure you want to delete {{ intern.name }}?')">Delete</a>
+            </div>
+        </div>
+        {% else %}
+        <p>No interns added yet.</p>
+        {% endfor %}
+    </div>
 </div>
 
-<!-- Edit Modal -->
-<div id="editModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <span class="close" id="closeModal">&times;</span>
-    <form id="editForm" method="POST">
-      <label>Name: <input type="text" name="name" id="editName" required></label><br>
-      <label>Team: <input type="text" name="team" id="editTeam" required></label><br>
-      <label>Task: <input type="text" name="task" id="editTask" required></label><br>
-      <label>Username: <input type="text" name="username" id="editUsername"></label><br>
-      <label>Password: <input type="password" name="password" id="editPassword"></label><br>
-      <button type="submit">Save</button>
-    </form>
-  </div>
+<div id="addInternModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeAddInternModal()">&times;</span>
+        <h3>Add New Intern</h3>
+        <form action="{{ url_for('admin.add_intern') }}" method="POST">
+            <label for="addName">Name:</label>
+            <input type="text" id="addName" name="name" required><br>
+            <label for="addTeam">Team:</label>
+            <input type="text" id="addTeam" name="team" required><br>
+            <label for="addTask">Current Task:</label>
+            <input type="text" id="addTask" name="task"><br>
+            <label for="addUsername">Username (for login):</label>
+            <input type="text" id="addUsername" name="username"><br>
+            <label for="addPassword">Password (for login):</label>
+            <input type="password" id="addPassword" name="password"><br>
+            <button type="submit" class="button-style add-button">Add Intern</button>
+        </form>
+    </div>
+</div>
+
+<div id="editInternModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeEditInternModal()">&times;</span>
+        <h3>Edit Intern</h3>
+        <form id="editInternForm" method="POST">
+            <input type="hidden" id="editInternId" name="intern_id">
+            <label for="editName">Name:</label>
+            <input type="text" id="editName" name="name" required><br>
+            <label for="editTeam">Team:</label>
+            <input type="text" id="editTeam" name="team" required><br>
+            <label for="editTask">Current Task:</label>
+            <input type="text" id="editTask" name="task"><br>
+            <label for="editUsername">Username (optional):</label>
+            <input type="text" id="editUsername" name="username"><br>
+            <label for="editPassword">New Password (leave blank to keep current):</label>
+            <input type="password" id="editPassword" name="password"><br>
+            <button type="submit" class="button-style updateBtn">Update Intern</button>
+        </form>
+    </div>
 </div>
 
 <script>
-// Search/filter logic
-const searchInput = document.getElementById('searchInput');
-const internList = document.getElementById('internList');
-searchInput.addEventListener('input', function() {
-  const filter = searchInput.value.toLowerCase();
-  Array.from(internList.getElementsByClassName('intern-card')).forEach(card => {
-    const name = card.getAttribute('data-name').toLowerCase();
-    const team = card.getAttribute('data-team').toLowerCase();
-    card.style.display = (name.includes(filter) || team.includes(filter)) ? '' : 'none';
-  });
-});
-// Modal logic for edit
-const modal = document.getElementById('editModal');
-const closeModal = document.getElementById('closeModal');
-const editForm = document.getElementById('editForm');
-let currentName = '';
-Array.from(document.getElementsByClassName('editBtn')).forEach(btn => {
-    btn.onclick = function() {
-        document.getElementById('editName').value = btn.getAttribute('data-name');
-        document.getElementById('editTeam').value = btn.getAttribute('data-team');
-        document.getElementById('editTask').value = btn.getAttribute('data-task');
-        document.getElementById('editUsername').value = btn.getAttribute('data-username') || '';
-        document.getElementById('editPassword').value = '';
-        currentName = btn.getAttribute('data-name');
-        editForm.action = '/intern/edit/' + encodeURIComponent(currentName);
-        modal.style.display = 'block';
+    function filterAdminInterns() {
+        var input, filter, internList, internCards, h4, pTags, i, txtValue;
+        input = document.getElementById('adminInternSearchInput');
+        filter = input.value.toUpperCase();
+        internList = document.getElementById('adminInternDirectoryList');
+        internCards = internList.getElementsByClassName('intern-card');
+
+        for (i = 0; i < internCards.length; i++) {
+            h4 = internCards[i].querySelector('h4');
+            pTags = internCards[i].querySelectorAll('p'); // Get all <p> tags
+
+            txtValue = (h4 ? h4.textContent || h4.innerText : '');
+            pTags.forEach(p => {
+                txtValue += (p.textContent || p.innerText);
+            });
+
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                internCards[i].style.display = "";
+            } else {
+                internCards[i].style.display = "none";
+            }
+        }
     }
-});
-closeModal.onclick = function() { modal.style.display = 'none'; }
-window.onclick = function(event) { if (event.target == modal) { modal.style.display = 'none'; } }
+
+    // Add Intern Modal Functions
+    function openAddInternModal() {
+        document.getElementById('addInternModal').style.display = 'block';
+        // Clear previous form data
+        document.getElementById('addName').value = '';
+        document.getElementById('addTeam').value = '';
+        document.getElementById('addTask').value = '';
+        document.getElementById('addUsername').value = '';
+        document.getElementById('addPassword').value = '';
+    }
+
+    function closeAddInternModal() {
+        document.getElementById('addInternModal').style.display = 'none';
+    }
+
+    // Edit Intern Modal Functions
+    function openEditInternModal(id, name, team, task, username) {
+        document.getElementById('editInternModal').style.display = 'block';
+        document.getElementById('editInternForm').action = "{{ url_for('admin.edit_intern_admin', intern_id='PLACEHOLDER') }}".replace('PLACEHOLDER', id);
+        document.getElementById('editInternId').value = id;
+        document.getElementById('editName').value = name;
+        document.getElementById('editTeam').value = team;
+        document.getElementById('editTask').value = (task === 'None' ? '' : task); // Handle 'None' if Jinja converts it
+        document.getElementById('editUsername').value = (username === 'None' ? '' : username); // Handle 'None'
+        document.getElementById('editPassword').value = ''; // Always clear password field
+    }
+
+    function closeEditInternModal() {
+        document.getElementById('editInternModal').style.display = 'none';
+    }
+
+    // Close modal if click outside (for both Add and Edit)
+    window.onclick = function(event) {
+        var addModal = document.getElementById('addInternModal');
+        var editModal = document.getElementById('editInternModal');
+        if (event.target == addModal) {
+            addModal.style.display = "none";
+        }
+        if (event.target == editModal) {
+            editModal.style.display = "none";
+        }
+    }
 </script>
 {% endblock %}

@@ -1,85 +1,153 @@
 {% extends 'base.html' %}
+{% block title %}Welcome to Control Alt Elite Intern Portal{% endblock %}
 {% block content %}
 <div class="welcome-banner">
-  <h1>Welcome to the Intern Portal</h1>
-  <p>Track, manage, and celebrate our amazing interns!</p>
+    <h1>Welcome to the Intern Portal</h1>
+    <p class="description">Your one-stop solution for managing intern information, resources, and meetings.</p>
 </div>
 
 <div class="quick-links">
-  <a href="/admin/">Admin Dashboard</a> |
-  <a href="/intern/login">Intern Login</a> |
-  <a href="/">Home</a>
+    <a href="{{ url_for('home.intern_login') }}" class="button-style">Intern Login</a> |
+    <a href="{{ url_for('admin.admin_login') }}" class="button-style">Admin Login</a>
 </div>
 
-<div class="features">
-  <div class="feature-box">
-    <h3>Team Overview</h3>
-    <ul>
-      {% for team, count in team_overview.items() %}
-        <li><strong>{{ team }}</strong>: {{ count }} intern{{ 's' if count > 1 else '' }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  <div class="feature-box">
-    <h3>Recent Tasks</h3>
-    <ul>
-      {% for item in recent_tasks %}
-        <li><strong>{{ item.name }}</strong>: {{ item.task }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-</div>
-
-<div class="search-section">
-  <input type="text" id="searchInput" placeholder="Search interns by name or team...">
-</div>
-
-<div class="intern-list" id="internList">
-  {% for intern in interns %}
-    <div class="intern-card" data-name="{{ intern.name }}" data-team="{{ intern.team }}" data-task="{{ intern.task }}">
-      <h4>{{ intern.name }}</h4>
-      <p><strong>Team:</strong> {{ intern.team }}</p>
-      <p><strong>Task:</strong> {{ intern.task }}</p>
-      <button class="detailsBtn">Details</button>
+{# TEAM OVERVIEW & RECENT TASKS #}
+<div class="home-info-sections">
+    <div class="feature-box">
+        <h3>Team Overview</h3>
+        <ul>
+            {% for team, count in team_overview.items() %}
+                <li>{{ team }}: {{ count }} Interns</li>
+            {% else %}
+                <li>No teams found.</li>
+            {% endfor %}
+        </ul>
     </div>
-  {% endfor %}
+    <div class="feature-box">
+        <h3>Recent Intern Tasks</h3>
+        <ul>
+            {% for task_item in recent_tasks %}
+                <li>{{ task_item.name }}: {{ task_item.task }}</li>
+            {% else %}
+                <li>No recent tasks.</li>
+            {% endfor %}
+        </ul>
+    </div>
 </div>
 
-<!-- Intern Details Modal -->
-<div id="detailsModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <span class="close" id="closeDetails">&times;</span>
-    <h3 id="modalName"></h3>
-    <p><strong>Team:</strong> <span id="modalTeam"></span></p>
-    <p><strong>Task:</strong> <span id="modalTask"></span></p>
-  </div>
+{# INTERN DIRECTORY / LIST #}
+<div id="internDirectorySection" class="content-section">
+    <div class="search-section">
+        <h2>Intern Directory</h2>
+        <input type="text" id="searchInput" onkeyup="filterInterns()" placeholder="Search for interns by name or team...">
+    </div>
+
+    <div class="intern-list" id="internDirectoryList">
+        {% for intern in interns %}
+            <div class="intern-card" data-intern-id="{{ intern._id }}">
+                <h4>{{ intern.name }}</h4>
+                <p><strong>Team:</strong> {{ intern.team }}</p>
+                {% if intern.task %}
+                    <p><strong>Current Task:</strong> {{ intern.task }}</p>
+                {% endif %}
+                <button type="button" class="detailsBtn" onclick="showInternDetails('{{ intern._id }}')">Details</button>
+            </div>
+        {% else %}
+            <p>No interns found in the directory.</p>
+        {% endfor %}
+    </div>
+</div>
+
+{# INTERN DETAILS SECTION - Hidden by default, shown by JavaScript #}
+<div id="internDetailsSection" class="content-section section-hidden">
+    <div class="intern-detail-card" id="selectedInternDetailCard">
+        {# Intern details will be dynamically inserted here #}
+    </div>
+    <div style="text-align: center; margin-top: 20px;">
+        <button type="button" class="button-style" onclick="hideInternDetails()">Back to All Interns</button>
+    </div>
 </div>
 
 <script>
-// Search/filter logic
-const searchInput = document.getElementById('searchInput');
-const internList = document.getElementById('internList');
-searchInput.addEventListener('input', function() {
-  const filter = searchInput.value.toLowerCase();
-  Array.from(internList.getElementsByClassName('intern-card')).forEach(card => {
-    const name = card.getAttribute('data-name').toLowerCase();
-    const team = card.getAttribute('data-team').toLowerCase();
-    card.style.display = (name.includes(filter) || team.includes(filter)) ? '' : 'none';
-  });
-});
-// Modal logic for details
-const detailsModal = document.getElementById('detailsModal');
-const closeDetails = document.getElementById('closeDetails');
-Array.from(document.getElementsByClassName('detailsBtn')).forEach(btn => {
-  btn.onclick = function() {
-    const card = btn.parentElement;
-    document.getElementById('modalName').textContent = card.getAttribute('data-name');
-    document.getElementById('modalTeam').textContent = card.getAttribute('data-team');
-    document.getElementById('modalTask').textContent = card.getAttribute('data-task');
-    detailsModal.style.display = 'block';
-  }
-});
-closeDetails.onclick = function() { detailsModal.style.display = 'none'; }
-window.onclick = function(event) { if (event.target == detailsModal) { detailsModal.style.display = 'none'; } }
+    // Store all intern data from Jinja for JavaScript use
+    const allInternsData = {{ interns | tojson }}; 
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const internDirectorySection = document.getElementById('internDirectorySection');
+        const internDetailsSection = document.getElementById('internDetailsSection');
+        
+        // Always show directory and hide details on initial load
+        internDirectorySection.classList.remove('section-hidden');
+        internDetailsSection.classList.add('section-hidden');
+    });
+
+    // This function now only controls display client-side.
+    function showInternDetails(internId) {
+        const internDirectorySection = document.getElementById('internDirectorySection');
+        const internDetailsSection = document.getElementById('internDetailsSection');
+
+        internDirectorySection.classList.add('section-hidden'); // Hide directory
+        internDetailsSection.classList.remove('section-hidden'); // Show details
+        
+        displayInternDetails(internId);
+    }
+
+    function hideInternDetails() {
+        const internDirectorySection = document.getElementById('internDirectorySection');
+        const internDetailsSection = document.getElementById('internDetailsSection');
+
+        internDirectorySection.classList.remove('section-hidden'); // Show directory
+        internDetailsSection.classList.add('section-hidden'); // Hide details
+    }
+
+    function displayInternDetails(internId) {
+        const internDetailCard = document.getElementById('selectedInternDetailCard');
+        const intern = allInternsData.find(i => {
+            // Check if _id is an object with $oid, or a direct string
+            if (typeof i._id === 'object' && i._id.$oid) {
+                return i._id.$oid === internId;
+            }
+            return i._id === internId;
+        });
+
+        if (intern) {
+            internDetailCard.innerHTML = `
+                <h3>${intern.name}</h3>
+                <p><strong>Team:</strong> ${intern.team}</p>
+                <p><strong>Current Task:</strong> ${intern.task ? intern.task : 'Not assigned yet.'}</p>
+                {# Note: Username is explicitly excluded from display here #}
+            `;
+        } else {
+            internDetailCard.innerHTML = `<p class="error">Intern details not found.</p>`;
+        }
+    }
+
+    // Filter Interns function (remains the same logic, but hides details if visible)
+    function filterInterns() {
+        hideInternDetails(); // Hide details section when searching
+        var input, filter, internList, internCards, nameH4, teamP, taskP, i, txtValueName, txtValueTeam, txtValueTask;
+        input = document.getElementById('searchInput');
+        filter = input.value.toUpperCase();
+        internList = document.getElementById('internDirectoryList');
+        internCards = internList.getElementsByClassName('intern-card');
+
+        for (i = 0; i < internCards.length; i++) {
+            nameH4 = internCards[i].querySelector('h4');
+            teamP = internCards[i].querySelector('p:nth-of-type(1)');
+            taskP = internCards[i].querySelector('p:nth-of-type(2)');
+
+            txtValueName = nameH4 ? nameH4.textContent || nameH4.innerText : '';
+            txtValueTeam = teamP ? teamP.textContent || teamP.innerText : '';
+            txtValueTask = taskP ? taskP.textContent || taskP.innerText : '';
+
+            if (txtValueName.toUpperCase().indexOf(filter) > -1 ||
+                txtValueTeam.toUpperCase().indexOf(filter) > -1 ||
+                txtValueTask.toUpperCase().indexOf(filter) > -1) {
+                internCards[i].style.display = "";
+            } else {
+                internCards[i].style.display = "none";
+            }
+        }
+    }
 </script>
 {% endblock %}

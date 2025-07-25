@@ -1,3 +1,6 @@
 Flask
 pymongo
 dnspython
+Werkzeug
+python-dotenv
+Flask-PyMongo

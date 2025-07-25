@@ -1,75 +1,83 @@
 {% extends 'base.html' %}
+{% block title %}Intern Dashboard - {{ intern.name }}{% endblock %}
 {% block content %}
 <div class="intern-banner">
-  <h1>Welcome, {{ intern.name }}!</h1>
-  <p>Here is your personalized dashboard.</p>
+    <h1>Welcome, {{ intern.name }}!</h1>
+    <p class="description">Here's your personalized intern overview.</p>
+    <div class="intern-logout-btn">
+        <a href="{{ url_for('intern.logout') }}" class="button-style">Logout</a>
+    </div>
 </div>
 
-<div class="quick-links">
-  <a href="/">Home</a> |
-  <a href="/intern/logout">Logout</a>
-</div>
+<div class="dashboard-sections-container">
+    <div class="feature-box-dashboard intern-profile">
+        <h3>Your Profile</h3>
+        {# <p><strong>Username:</strong> {{ intern.username }}</p> #} {# Removed Username Display #}
+        <p><strong>Team:</strong> {{ intern.team }}</p>
+        <p><strong>Current Task:</strong> {{ intern.task if intern.task else 'No task assigned yet.' }}</p>
+        {# Optionally add an edit link for the intern to update their own profile/task #}
+        {# <a href="{{ url_for('intern.edit_profile') }}" class="button-style">Edit Profile</a> #}
+    </div>
 
-<div class="intern-features">
-  <div class="feature-box">
-    <h3>Your Team</h3>
-    <p><strong>{{ intern.team }}</strong></p>
-  </div>
-  <div class="feature-box">
-    <h3>Current Task</h3>
-    <p>{{ intern.task }}</p>
-  </div>
-</div>
+    <div class="feature-box-dashboard">
+        <h3>Your Recent Tasks</h3>
+        {% if recent_tasks %}
+        <ul>
+            {% for task in recent_tasks %}
+            <li>{{ task }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No recent tasks recorded.</p>
+        {% endif %}
+    </div>
 
-<div class="recent-tasks-box">
-  <h3>Recent Task</h3>
-  <ul>
-    {% for task in recent_tasks %}
-      <li>{{ task }}</li>
-    {% endfor %}
-  </ul>
-</div>
+    <div class="feature-box-dashboard">
+        <h3>Your Team Members ({{ intern.team }})</h3>
+        {% if team_members %}
+        <ul>
+            {% for member in team_members %}
+            {# Display format: Name: [Name] - Task: [Task] #}
+            <li>{{ member.name }}: {{ member.task if member.task else 'N/A' }}</li> {# UPDATED LINE HERE #}
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No other members in your team yet.</p>
+        {% endif %}
+    </div>
 
-<div class="team-members-box">
-  <h3>Your Team Members</h3>
-  {% if team_members %}
-    <ul>
-      {% for member in team_members %}
-        <li>{{ member.name }}</li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>No other team members found.</p>
-  {% endif %}
-</div>
+    <div class="feature-box-dashboard">
+        <h3>Resources</h3>
+        {% if resources %}
+        <ul class="resource-list-dashboard">
+            {% for resource in resources %}
+            <li>
+                <strong><a href="{{ resource.link }}" target="_blank">{{ resource.title }}</a></strong>
+                <p>{{ resource.description }}</p>
+                {% if resource.category %}<small>Category: {{ resource.category }}</small>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No resources available yet.</p>
+        {% endif %}
+    </div>
 
-<div class="resources-list">
-  <h3>Resources</h3>
-  <ul>
-    {% for resource in resources %}
-      <li>
-        <strong>{{ resource.title }}</strong> ({{ resource.category }})<br>
-        {{ resource.description }}<br>
-        <a href="{{ resource.link }}" target="_blank">{{ resource.link }}</a>
-      </li>
-    {% else %}
-      <li>No resources available yet.</li>
-    {% endfor %}
-  </ul>
-</div>
-
-<div class="meetings-list">
-  <h3>Upcoming Meetings</h3>
-  <ul>
-    {% for meeting in meetings %}
-      <li>
-        <strong>{{ meeting.title }}</strong> ({{ meeting.datetime }})<br>
-        {{ meeting.description }}<br>
-        <a href="{{ meeting.link }}" target="_blank">{{ meeting.link }}</a>
-      </li>
-    {% else %}
-      <li>No meetings scheduled yet.</li>
-    {% endfor %}
-  </ul>
+    <div class="feature-box-dashboard">
+        <h3>Upcoming Meetings</h3>
+        {% if meetings %}
+        <ul class="meeting-list-dashboard">
+            {% for meeting in meetings %}
+            <li>
+                <strong><a href="{{ meeting.link }}" target="_blank">{{ meeting.title }}</a></strong>
+                <p>{{ meeting.description }}</p>
+                <p><small>Time: {{ meeting.datetime }}</small></p>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No upcoming meetings.</p>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

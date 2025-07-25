@@ -1,11 +1,56 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Intern Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Intern Management System{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <header><h1>Control Alt Elite Intern Portal</h1></header>
-    <main>{% block content %}{% endblock %}</main>
+    <header>
+        <h1>Control Alt Elite Intern Portal</h1>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        {# <p>&copy; 2024 Control Alt Elite. All rights reserved.</p> #}
+    </footer>
+
+    {# Flash Message Container (No longer a full-screen modal) #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div id="flashMessageContainer" class="flash-container">
+        <ul class="flashes">
+            {% for category, message in messages %}
+            <li class="{{ category if category else 'info' }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var flashContainer = document.getElementById("flashMessageContainer");
+
+            if (flashContainer) {
+                // Display the flash container
+                flashContainer.style.display = "block";
+
+                // Hide the flash container after 5 seconds (5000 milliseconds)
+                setTimeout(function() {
+                    flashContainer.style.display = "none";
+                }, 5000);
+
+                // Optional: Allow user to click to dismiss immediately
+                flashContainer.addEventListener('click', function() {
+                    flashContainer.style.display = "none";
+                });
+            }
+        });
+    </script>
 </body>
 </html>
